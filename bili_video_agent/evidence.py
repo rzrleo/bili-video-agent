@@ -139,11 +139,14 @@ class MediaFiles:
 
 
 def transcribe(path: Path, options: EvidenceOptions) -> tuple[list[dict], str | None]:
+    pcm_file = path.parent / "asr-input.wav"
     result_file = path.parent / "asr-result.json"
+    run_ffmpeg(ffmpeg_path(), ["-i", str(path), "-vn", "-ac", "1", "-ar", "16000",
+                              "-c:a", "pcm_s16le", str(pcm_file)], path.parent)
     try:
         result = subprocess.run(
             [sys.executable, "-X", "utf8", "-m", "bili_video_agent.transcription_worker",
-             str(path), str(result_file), options.model, options.language],
+             str(pcm_file), str(result_file), options.model, options.language],
             capture_output=True, timeout=max(300, options.max_minutes * 60), check=False,
         )
     except subprocess.TimeoutExpired as exc:
@@ -220,7 +223,7 @@ def collect(client: BilibiliClient, video: dict, options: EvidenceOptions) -> di
             media = MediaFiles(client, video, Path(temp), options.max_media_mib * 1024 * 1024)
             if need_asr:
                 try:
-                    if find_spec("faster_whisper") is None:
+                    if find_spec("pywhispercpp") is None:
                         raise BiliError("本地语音转写需要安装 bili-video-agent[media]。")
                     segments, language = transcribe(media.get("audio"), options)
                     if segments:

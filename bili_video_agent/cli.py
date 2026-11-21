@@ -11,6 +11,7 @@ import sys
 from .bilibili import BiliError, BilibiliClient, ORDERS
 from .evidence import EvidenceOptions, collect
 from .search import search_videos
+from .transcription_worker import MODEL_NAMES
 
 
 def bounded_integer(minimum: int, maximum: int):
@@ -53,7 +54,7 @@ def parser() -> argparse.ArgumentParser:
     evidence.add_argument("--language", type=language_code, default="auto", help="字幕/转写语言，默认自动")
     evidence.add_argument("--frames", type=bounded_integer(0, 12), default=0, help="抽帧数量，默认 0")
     evidence.add_argument("--captions-only", action="store_true", help="只读取现成字幕，不下载视频或调用 Whisper")
-    evidence.add_argument("--model", choices=("tiny", "base", "small", "medium", "large-v3", "turbo"),
+    evidence.add_argument("--model", choices=MODEL_NAMES,
                           default="base", help="本地 Whisper 模型，默认 base")
     evidence.add_argument("--max-minutes", type=bounded_integer(1, 360), default=30, help="允许转写的最大时长，默认 30 分钟")
     evidence.add_argument("--max-media-mib", type=bounded_integer(1, 2048), default=180,

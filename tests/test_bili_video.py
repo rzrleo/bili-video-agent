@@ -4,11 +4,12 @@ from pathlib import Path
 import subprocess
 from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from bili_video_agent.bilibili import BiliError, BilibiliClient, VideoRef, allowed_media_url, parse_target
 from bili_video_agent.evidence import EvidenceOptions, collect, transcribe
 from bili_video_agent.search import search_videos
+from bili_video_agent.transcription_worker import model_path
 
 
 VIDEO_ID = "BV1xx411c7mD"
@@ -77,6 +78,19 @@ class WorkflowsTest(unittest.TestCase):
 
     def test_native_access_violation_is_reported_to_the_parent(self):
         exit_status = subprocess.CompletedProcess([], 0xC0000005, b"", b"Windows fatal exception")
-        with patch("bili_video_agent.evidence.subprocess.run", return_value=exit_status):
+        with patch("bili_video_agent.evidence.ffmpeg_path", return_value="ffmpeg"), \
+                patch("bili_video_agent.evidence.run_ffmpeg"), \
+                patch("bili_video_agent.evidence.subprocess.run", return_value=exit_status):
             with self.assertRaisesRegex(BiliError, "Windows.*访问冲突"):
                 transcribe(Path("audio.m4s"), EvidenceOptions(Path(".")))
+
+    def test_incomplete_model_is_not_published_to_cache(self):
+        response = MagicMock(status_code=200, headers={"Content-Length": str(2 * 1024 * 1024)})
+        response.__enter__.return_value = response
+        response.iter_content.return_value = [b"lmgg" + bytes(1024 * 1024)]
+        with TemporaryDirectory() as root, patch("bili_video_agent.transcription_worker.requests.get",
+                                                return_value=response):
+            directory = Path(root)
+            with self.assertRaisesRegex(ValueError, "Invalid Whisper model download"):
+                model_path("tiny", directory)
+            self.assertEqual(list(directory.iterdir()), [])

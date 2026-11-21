@@ -12,7 +12,7 @@ cd bili-video-agent
 python -m pip install -e .
 ```
 
-需要从没有字幕的视频转写口播或提取关键帧时，建议在独立 Python 虚拟环境中安装媒体依赖。Windows 转写建议用已验证的 Python 3.12，媒体依赖固定使用兼容的 CTranslate2 Windows 版本。本地 Whisper 的模型权重在第一次转写时下载。
+需要从没有字幕的视频转写口播或提取关键帧时，建议在独立 Python 虚拟环境中安装媒体依赖。Windows 转写可用 Python 3.12。Whisper.cpp 的模型权重在第一次转写时下载，可用 `BILI_VIDEO_MODEL_DIR` 指定缓存目录。
 
 ```sh
 python -m pip install -e ".[media]"
@@ -60,6 +60,6 @@ CLI 返回事实材料，Codex 负责筛选和写出总结。证据状态为 `re
 
 ## 参考与许可证
 
-客户端和 CLI 为本仓库独立实现。接口和工具行为参考 [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler)、[bilibili-cli](https://github.com/tamnd/bilibili-cli) 和 [yt-dlp 的 B 站提取器](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/bilibili.py)。音频转写使用 [Faster Whisper](https://github.com/SYSTRAN/faster-whisper)，画面抽取使用 [FFmpeg](https://ffmpeg.org/)。
+客户端和 CLI 为本仓库独立实现。接口和工具行为参考 [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler)、[bilibili-cli](https://github.com/tamnd/bilibili-cli) 和 [yt-dlp 的 B 站提取器](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/bilibili.py)。本地音频转写使用 [Whisper.cpp](https://github.com/ggml-org/whisper.cpp) 的 [Python 绑定](https://github.com/absadiki/pywhispercpp)，媒体处理使用 [FFmpeg](https://ffmpeg.org/)。
 
 本项目使用 [MIT 许可证](LICENSE)。
