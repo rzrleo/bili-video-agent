@@ -12,7 +12,7 @@ cd bili-video-agent
 python -m pip install -e .
 ```
 
-需要从没有字幕的视频转写口播或提取关键帧时，安装媒体依赖。其中包含 Faster Whisper 及 FFmpeg 的 Python 分发包。本地 Whisper 的模型权重在第一次转写时下载。
+需要从没有字幕的视频转写口播或提取关键帧时，建议在独立 Python 虚拟环境中安装媒体依赖。Windows 转写建议用已验证的 Python 3.12，媒体依赖固定使用兼容的 CTranslate2 Windows 版本。本地 Whisper 的模型权重在第一次转写时下载。
 
 ```sh
 python -m pip install -e ".[media]"

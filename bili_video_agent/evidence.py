@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 from tempfile import TemporaryDirectory, mkdtemp
 
 import requests
@@ -138,19 +139,32 @@ class MediaFiles:
 
 
 def transcribe(path: Path, options: EvidenceOptions) -> tuple[list[dict], str | None]:
+    result_file = path.parent / "asr-result.json"
     try:
-        from faster_whisper import WhisperModel
-    except ImportError as exc:
-        raise BiliError("本地语音转写需要安装 bili-video-agent[media]。") from exc
+        result = subprocess.run(
+            [sys.executable, "-X", "utf8", "-m", "bili_video_agent.transcription_worker",
+             str(path), str(result_file), options.model, options.language],
+            capture_output=True, timeout=max(300, options.max_minutes * 60), check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise BiliError("本地语音转写超时。可选用较小的 Whisper 模型。") from exc
+    except OSError as exc:
+        raise BiliError("无法启动本地语音转写进程。") from exc
+    if result.returncode:
+        reason = result.stderr.decode("utf-8", errors="replace").strip().splitlines()
+        failure = reason[-1] if reason else ""
+        if failure.startswith("asr-error:"):
+            detail = failure.removeprefix("asr-error:")
+        elif result.returncode & 0xFFFFFFFF == 0xC0000005:
+            detail = "Windows 本地媒体或推理库访问冲突"
+        else:
+            detail = f"进程退出码 {result.returncode}"
+        raise BiliError(f"本地 Whisper 转写失败（{detail}）。")
     try:
-        model = WhisperModel(options.model, device="cpu", compute_type="int8")
-        language = None if options.language == "auto" else options.language
-        segments, info = model.transcribe(str(path), language=language, vad_filter=True)
-        return [{"start": segment.start, "end": segment.end, "text": segment.text.strip()}
-                for segment in segments if segment.text.strip()], info.language
-    except Exception as exc:
-        # Installed model backends can raise HTTP, decoding, model-loading or inference errors.
-        raise BiliError(f"本地 Whisper 转写失败（{type(exc).__name__}）。请检查模型缓存和网络。") from exc
+        payload = json.loads(result_file.read_text(encoding="utf-8"))
+        return payload["segments"], payload["language"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise BiliError("转写进程没有生成有效的结果。") from exc
 
 
 def extract_frames(path: Path, output: Path, length: float, count: int, warnings: list[str]) -> list[dict]:

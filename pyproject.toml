@@ -12,7 +12,12 @@ license = {file = "LICENSE"}
 dependencies = ["requests>=2.32,<3"]
 
 [project.optional-dependencies]
-media = ["faster-whisper>=1.1,<2", "imageio-ffmpeg>=0.6,<1"]
+media = [
+    "faster-whisper>=1.1,<2",
+    "imageio-ffmpeg>=0.6,<1",
+    # Newer Windows wheels crashed during CPU model initialization on the tested host.
+    "ctranslate2==4.6.0; sys_platform == 'win32'",
+]
 
 [project.scripts]
 bili-video = "bili_video_agent.cli:main"

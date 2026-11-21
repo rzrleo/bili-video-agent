@@ -1,12 +1,13 @@
 from contextlib import closing
 import json
 from pathlib import Path
+import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import Mock, patch
 
 from bili_video_agent.bilibili import BiliError, BilibiliClient, VideoRef, allowed_media_url, parse_target
-from bili_video_agent.evidence import EvidenceOptions, collect
+from bili_video_agent.evidence import EvidenceOptions, collect, transcribe
 from bili_video_agent.search import search_videos
 
 
@@ -73,3 +74,9 @@ class WorkflowsTest(unittest.TestCase):
                 result = collect(client, video, EvidenceOptions(Path(root), captions_only=True))
         self.assertEqual(result["status"], "unavailable")
         self.assertIsNone(result["transcript_file"])
+
+    def test_native_access_violation_is_reported_to_the_parent(self):
+        exit_status = subprocess.CompletedProcess([], 0xC0000005, b"", b"Windows fatal exception")
+        with patch("bili_video_agent.evidence.subprocess.run", return_value=exit_status):
+            with self.assertRaisesRegex(BiliError, "Windows.*访问冲突"):
+                transcribe(Path("audio.m4s"), EvidenceOptions(Path(".")))
