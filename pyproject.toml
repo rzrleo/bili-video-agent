@@ -17,6 +17,8 @@ media = [
     "imageio-ffmpeg>=0.6,<1",
     # Newer Windows wheels crashed during CPU model initialization on the tested host.
     "ctranslate2==4.6.0; sys_platform == 'win32'",
+    # CTranslate2 4.6.0 imports pkg_resources, removed in setuptools 82.
+    "setuptools>=68,<82; sys_platform == 'win32'",
 ]
 
 [project.scripts]
